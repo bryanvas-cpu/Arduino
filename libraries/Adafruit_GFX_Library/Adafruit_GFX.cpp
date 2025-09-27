@@ -347,6 +347,121 @@ void Adafruit_GFX::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 
 /**************************************************************************/
 /*!
+   @brief    Draw an ellipse outline
+    @param    x0   Center-point x coordinate
+    @param    y0   Center-point y coordinate
+    @param    rw   Horizontal radius of ellipse
+    @param    rh   Vertical radius of ellipse
+    @param    color 16-bit 5-6-5 Color to draw with
+*/
+/**************************************************************************/
+void Adafruit_GFX::drawEllipse(int16_t x0, int16_t y0, int16_t rw, int16_t rh,
+                               uint16_t color) {
+#if defined(ESP8266)
+  yield();
+#endif
+  // Bresenham's ellipse algorithm
+  int16_t x = 0, y = rh;
+  int32_t rw2 = rw * rw, rh2 = rh * rh;
+  int32_t twoRw2 = 2 * rw2, twoRh2 = 2 * rh2;
+
+  int32_t decision = rh2 - (rw2 * rh) + (rw2 / 4);
+
+  startWrite();
+
+  // region 1
+  while ((twoRh2 * x) < (twoRw2 * y)) {
+    writePixel(x0 + x, y0 + y, color);
+    writePixel(x0 - x, y0 + y, color);
+    writePixel(x0 + x, y0 - y, color);
+    writePixel(x0 - x, y0 - y, color);
+    x++;
+    if (decision < 0) {
+      decision += rh2 + (twoRh2 * x);
+    } else {
+      decision += rh2 + (twoRh2 * x) - (twoRw2 * y);
+      y--;
+    }
+  }
+
+  // region 2
+  decision = ((rh2 * (2 * x + 1) * (2 * x + 1)) >> 2) +
+             (rw2 * (y - 1) * (y - 1)) - (rw2 * rh2);
+  while (y >= 0) {
+    writePixel(x0 + x, y0 + y, color);
+    writePixel(x0 - x, y0 + y, color);
+    writePixel(x0 + x, y0 - y, color);
+    writePixel(x0 - x, y0 - y, color);
+    y--;
+    if (decision > 0) {
+      decision += rw2 - (twoRw2 * y);
+    } else {
+      decision += rw2 + (twoRh2 * x) - (twoRw2 * y);
+      x++;
+    }
+  }
+
+  endWrite();
+}
+
+/**************************************************************************/
+/*!
+   @brief    Draw an ellipse with filled colour
+    @param    x0   Center-point x coordinate
+    @param    y0   Center-point y coordinate
+    @param    rw   Horizontal radius of ellipse
+    @param    rh   Vertical radius of ellipse
+    @param    color 16-bit 5-6-5 Color to draw with
+*/
+/**************************************************************************/
+void Adafruit_GFX::fillEllipse(int16_t x0, int16_t y0, int16_t rw, int16_t rh,
+                               uint16_t color) {
+#if defined(ESP8266)
+  yield();
+#endif
+  // Bresenham's ellipse algorithm
+  int16_t x = 0, y = rh;
+  int32_t rw2 = rw * rw, rh2 = rh * rh;
+  int32_t twoRw2 = 2 * rw2, twoRh2 = 2 * rh2;
+
+  int32_t decision = rh2 - (rw2 * rh) + (rw2 / 4);
+
+  startWrite();
+
+  // region 1
+  while ((twoRh2 * x) < (twoRw2 * y)) {
+    x++;
+    if (decision < 0) {
+      decision += rh2 + (twoRh2 * x);
+    } else {
+      decision += rh2 + (twoRh2 * x) - (twoRw2 * y);
+      drawFastHLine(x0 - (x - 1), y0 + y, 2 * (x - 1) + 1, color);
+      drawFastHLine(x0 - (x - 1), y0 - y, 2 * (x - 1) + 1, color);
+      y--;
+    }
+  }
+
+  // region 2
+  decision = ((rh2 * (2 * x + 1) * (2 * x + 1)) >> 2) +
+             (rw2 * (y - 1) * (y - 1)) - (rw2 * rh2);
+  while (y >= 0) {
+    drawFastHLine(x0 - x, y0 + y, 2 * x + 1, color);
+    drawFastHLine(x0 - x, y0 - y, 2 * x + 1, color);
+
+    y--;
+    if (decision > 0) {
+      decision += rw2 - (twoRw2 * y);
+    } else {
+      decision += rw2 + (twoRh2 * x) - (twoRw2 * y);
+      x++;
+    }
+  }
+
+  endWrite();
+}
+
+/**************************************************************************/
+/*!
    @brief    Draw a circle outline
     @param    x0   Center-point x coordinate
     @param    y0   Center-point y coordinate
@@ -1758,12 +1873,21 @@ const uint8_t PROGMEM GFXcanvas1::GFXclrBit[] = {0x7F, 0xBF, 0xDF, 0xEF,
    @brief    Instatiate a GFX 1-bit canvas context for graphics
    @param    w   Display width, in pixels
    @param    h   Display height, in pixels
+   @param    allocate_buffer If true, a buffer is allocated with malloc. If
+   false, the subclass must initialize the buffer before any drawing operation,
+   and free it in the destructor. If false (the default), the buffer is
+   allocated and freed by the library.
 */
 /**************************************************************************/
-GFXcanvas1::GFXcanvas1(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
-  uint32_t bytes = ((w + 7) / 8) * h;
-  if ((buffer = (uint8_t *)malloc(bytes))) {
-    memset(buffer, 0, bytes);
+GFXcanvas1::GFXcanvas1(uint16_t w, uint16_t h, bool allocate_buffer)
+    : Adafruit_GFX(w, h), buffer_owned(allocate_buffer) {
+  if (allocate_buffer) {
+    uint32_t bytes = ((w + 7) / 8) * h;
+    if ((buffer = (uint8_t *)malloc(bytes))) {
+      memset(buffer, 0, bytes);
+    }
+  } else {
+    buffer = nullptr;
   }
 }
 
@@ -1773,7 +1897,7 @@ GFXcanvas1::GFXcanvas1(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
 */
 /**************************************************************************/
 GFXcanvas1::~GFXcanvas1(void) {
-  if (buffer)
+  if (buffer && buffer_owned)
     free(buffer);
 }
 
@@ -2111,13 +2235,21 @@ void GFXcanvas1::drawFastRawHLine(int16_t x, int16_t y, int16_t w,
    @brief    Instatiate a GFX 8-bit canvas context for graphics
    @param    w   Display width, in pixels
    @param    h   Display height, in pixels
+   @param    allocate_buffer If true, a buffer is allocated with malloc. If
+   false, the subclass must initialize the buffer before any drawing operation,
+   and free it in the destructor. If false (the default), the buffer is
+   allocated and freed by the library.
 */
 /**************************************************************************/
-GFXcanvas8::GFXcanvas8(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
-  uint32_t bytes = w * h;
-  if ((buffer = (uint8_t *)malloc(bytes))) {
-    memset(buffer, 0, bytes);
-  }
+GFXcanvas8::GFXcanvas8(uint16_t w, uint16_t h, bool allocate_buffer)
+    : Adafruit_GFX(w, h), buffer_owned(allocate_buffer) {
+  if (allocate_buffer) {
+    uint32_t bytes = w * h;
+    if ((buffer = (uint8_t *)malloc(bytes))) {
+      memset(buffer, 0, bytes);
+    }
+  } else
+    buffer = nullptr;
 }
 
 /**************************************************************************/
@@ -2126,7 +2258,7 @@ GFXcanvas8::GFXcanvas8(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
 */
 /**************************************************************************/
 GFXcanvas8::~GFXcanvas8(void) {
-  if (buffer)
+  if (buffer && buffer_owned)
     free(buffer);
 }
 
@@ -2379,12 +2511,21 @@ void GFXcanvas8::drawFastRawHLine(int16_t x, int16_t y, int16_t w,
    @brief    Instatiate a GFX 16-bit canvas context for graphics
    @param    w   Display width, in pixels
    @param    h   Display height, in pixels
+   @param    allocate_buffer If true, a buffer is allocated with malloc. If
+   false, the subclass must initialize the buffer before any drawing operation,
+   and free it in the destructor. If false (the default), the buffer is
+   allocated and freed by the library.
 */
 /**************************************************************************/
-GFXcanvas16::GFXcanvas16(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
-  uint32_t bytes = w * h * 2;
-  if ((buffer = (uint16_t *)malloc(bytes))) {
-    memset(buffer, 0, bytes);
+GFXcanvas16::GFXcanvas16(uint16_t w, uint16_t h, bool allocate_buffer)
+    : Adafruit_GFX(w, h), buffer_owned(allocate_buffer) {
+  if (allocate_buffer) {
+    uint32_t bytes = w * h * 2;
+    if ((buffer = (uint16_t *)malloc(bytes))) {
+      memset(buffer, 0, bytes);
+    }
+  } else {
+    buffer = nullptr;
   }
 }
 
@@ -2394,7 +2535,7 @@ GFXcanvas16::GFXcanvas16(uint16_t w, uint16_t h) : Adafruit_GFX(w, h) {
 */
 /**************************************************************************/
 GFXcanvas16::~GFXcanvas16(void) {
-  if (buffer)
+  if (buffer && buffer_owned)
     free(buffer);
 }
 

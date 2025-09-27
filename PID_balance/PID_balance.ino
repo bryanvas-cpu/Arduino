@@ -31,16 +31,16 @@ struct STATE{
 STATE state;
 
 // --- PID gains for balancing ---
-float Kp_bal = 15;   // proportional gain (tune)12
+float Kp_bal = 750;   // proportional gain (tune)12
 // float Kd_bal = -150.0;    // derivative gain (tune)
-float Kd_bal = 1.35;    // derivative gain (tune)0.85
-float Ki_bal = 2;    // optional integral2
+float Kd_bal = 0;    // derivative gain (tune)0.85
+float Ki_bal = 10;    // optional integral2
 
 float balance_integral = 0.0;
 
-float Kp_vel = 0.2;   // tune0.2
-float Ki_vel = 0.08;   // tune0.08
-float Kd_vel = 0.000001;   // tune0.00000001
+float Kp_vel = 50;   // tune0.2
+float Ki_vel = 0.0;   // tune0.08
+float Kd_vel = 0.00000;   // tune0.00000001
 double vel_integral = 0.0;
 double vel_prev_error = 0.0;
 
@@ -50,7 +50,7 @@ double freq = 100;
 double v_enc_filtered = 0.0;
 double theta_filtered = 0.0;
 
-float alpha_vel = 0.8;    // smoothing for velocity
+float alpha_vel = 0.9;    // smoothing for velocity
 float alpha_theta = 0.6;  // smoothing for pitch angle
 
 
@@ -85,10 +85,6 @@ void loop() {
   if (currentTime - lastPrintTime >= printInterval) {
     lastPrintTime = currentTime;
     joy_cmd = UpdateJoyloop();
-    // Serial.println(String(joy_cmd.on_off_state) + " " + 
-    //                String(joy_cmd.body_height_cmd) + " " + 
-    //                String(joy_cmd.left_joy_cmd) + " " + 
-    //                String(joy_cmd.right_joy_cmd));
   }
   if(joy_cmd.on_off_state == -1){
     motor_driver_loop(0.0,0.0);
@@ -117,11 +113,6 @@ void loop() {
   }
   lin_vel_cmd /= 512; // 0-> +-1
   ang_vel_cmd /= 512; // 0-> +-1
-
-  // Serial.print("Lin Cmd: ");
-  // Serial.print(lin_vel_cmd);
-  // Serial.print(" Ang Cmd: ");
-  // Serial.print(ang_vel_cmd);
 
   double v_cmd = lin_vel_cmd * 0.5;   // scale joystick to real speed (e.g., 0.5 m/s max)
   double vel_error = v_cmd - v_enc;
@@ -159,16 +150,6 @@ void loop() {
   double dt_omega = (currentTimeOmega - lastTimeOmega) / 1000.0;
   lastTimeOmega = currentTimeOmega;
 
-  // Serial.print(" velocity_encoder: ");
-  // Serial.print(v_enc);
-  // Serial.print(" angular_encoder: ");
-  // Serial.print(omega_enc);
-
-  // kalmanUpdate(accel, dt_lin, v_enc);
-  // kalmanUpdateAngular(omega_gyro, dt_omega, omega_enc);
-
-  // state.x_dot = x_est;
-  // double alpha_theta = 0.8;
   state.theta = alpha_theta * state.theta + (1-alpha_theta) * imuData.pitch;
   state.theta_dot = imuData.angularVelY;
   // state.alpha = imuData.yaw;
@@ -186,7 +167,6 @@ void loop() {
   Serial.print(" derivative: ");
   Serial.println(derivative);
 
-
   double balance_output = Kp_bal * error + Kd_bal * derivative + Ki_bal * balance_integral;
 
   double steering_output = ang_vel_cmd * 10; // tune scaling
@@ -195,29 +175,15 @@ void loop() {
   double right_pwm = balance_output - steering_output;
 
   // Clamp
-  left_pwm = constrain(left_pwm, -255, 255);
-  right_pwm = constrain(right_pwm, -255, 255);
+  left_pwm = constrain(left_pwm, -65536, 65536);
+  right_pwm = constrain(right_pwm, -65536, 65536);
+  Serial.println(left_pwm);
+  Serial.println(right_pwm);
 
   // --- Send to motors ---
   motor_driver_loop(left_pwm, right_pwm);
 
-
-  // Serial.print(" lpwm: ");
-  // Serial.print(left_pwm, 4);
-  // Serial.print(" rpwn: ");
-  // Serial.println(right_pwm, 4);
-
-  ServoIK(0, joy_cmd.body_height_cmd);
-  // Serial.println(joy_cmd.body_height_cmd);
-  // Serial.print("theta ");
-  // Serial.print(state.theta);
-  // Serial.print("theta_dot ");
-  // Serial.println(state.theta_dot);
-
-  // MOTORS DRIVER
-  // motor_driver_loop(final_left, final_right);
-  
   delay(10);
   freq = (1000/(millis()-loop_start_time));
-  // Serial.println("                                                     "+String(freq));
+  Serial.println("                                                     "+String(freq));
 }

@@ -50,7 +50,7 @@ struct DriveVel{
     float ang_vel;
 };
 
-const double alpha_motor = 0.9;
+const double alpha_motor = 0.1;
 
 void IRAM_ATTR right_encoder_callback() {
   int dir = digitalRead(r_enc_b) == HIGH ? 1 : -1;

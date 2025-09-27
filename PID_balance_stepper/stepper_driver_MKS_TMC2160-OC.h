@@ -62,7 +62,7 @@ DriveVel motor_driver_set_omega(float omega1, float omega2) {
     else digitalWrite(DIR_PIN1, LOW);
 
     // --- Motor2 direction ---
-    if (omega2 >= 0) digitalWrite(DIR_PIN2, HIGH);
+    if (omega2 < 0) digitalWrite(DIR_PIN2, HIGH);
     else digitalWrite(DIR_PIN2, LOW);
 
     // --- Convert omega (rad/s) to LEDC step frequency ---
@@ -80,6 +80,8 @@ DriveVel motor_driver_set_omega(float omega1, float omega2) {
     // --- Compute robot linear and angular velocity ---
     drive_vel.lin_vel = r * (omega_motor1 + omega_motor2) / 2.0;
     drive_vel.ang_vel = r * (omega_motor2 - omega_motor1) / L;
+
+    return {drive_vel.lin_vel, drive_vel.ang_vel};
 }
 
 #endif // MOTOR_DRIVER_LEDC_H

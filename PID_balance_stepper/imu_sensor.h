@@ -75,7 +75,7 @@ IMUData updateIMU() {
   float yaw = 0;
 
   // --- exponential smoothing (alpha = 0.5) ---
-  const float alpha = 0.01;
+  const float alpha = 0.005;
   static float f_ax = 0, f_ay = 0, f_az = 0;
   static float f_gx = 0, f_gy = 0, f_gz = 0;
   static float f_roll = 0, f_pitch = 0, f_yaw = 0;

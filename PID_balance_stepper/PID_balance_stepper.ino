@@ -20,18 +20,18 @@ struct STATE{
 STATE state;
 
 ///////////////////////////////////////////////////////////////// --- PID gains for theta ---
-float Kp_theta = 2.0;   // proportional gain (tune)12
-float Kd_theta = 0.0;    // derivative gain (tune)0.85
-float Ki_theta = 0;    // optional integral2
+float Kp_theta = 3.0;   // proportional gain (tune)12
+float Kd_theta = 0.00005;    // derivative gain (tune)0.85
+float Ki_theta = 0.000001;    // optional integral2
 float theta_integral = 0.0;
 double theta_filtered = 0.0;
 float alpha_theta = 0.1;  // smoothing for pitch angle
 float alpha_theta_dot = 0.1;
 
 ///////////////////////////////////////////////////////////////// --- PID gains for velocity ---
-float Kp_vel = 0.0;   // tune0.2
-float Ki_vel = 0.0;   // tune0.08
-float Kd_vel = 0.00000;   // tune0.00000001
+float Kp_vel = 2.1;   // tune0.2
+float Kd_vel = 0.00005;   // tune0.00000001
+float Ki_vel = 0.000001;   // tune0.08
 double vel_integral = 0.0;
 double vel_prev_error = 0.0;
 

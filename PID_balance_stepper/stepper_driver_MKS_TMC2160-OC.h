@@ -11,7 +11,7 @@
 
 // --- Stepper config ---
 const int STEPS_PER_REV = 12800; // 1.8° step, full step
-const int PWM_RESOLUTION = 8;    // 8-bit PWM resolution
+const int PWM_RESOLUTION = 1;    // 8-bit PWM resolution
 
 // --- LEDC channels ---
 const int CHANNEL1 = 0; // Motor1

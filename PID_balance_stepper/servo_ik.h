@@ -1,7 +1,6 @@
 #ifndef SERVO_IK_H
 #define SERVO_IK_H
 
-#include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 // #include "cmath"
 
@@ -30,12 +29,6 @@ int flag=1;
 
 int inverse_kinematics(double xe, double ye, int left_leg_param) {
 
-    // if(left_leg_param){
-    //   Serial.println("Left_leg--------------------------");
-    // }
-    // else{
-    //   Serial.println("--------------------------Right_leg");
-    // }
     xe = -xe;
     double L = sqrtf(xe*xe + ye*ye);
     double J3 = acos(   ((l1 * l1) + (l2 * l2) - (L * L))   /   (2 * l1 * l2)   ) * (180 / PI);
@@ -47,7 +40,6 @@ int inverse_kinematics(double xe, double ye, int left_leg_param) {
     double xa = l1*cos(joint_angles[0] * 3.1415/180.0) + l5*cos(joint_angles[1] * 3.1415/180.0 );
     double ya = l1*sin(joint_angles[0] * 3.1415/180.0) + l5*sin(joint_angles[1]* 3.1415/180.0 );
     // Serial.print(" xa,ya "+ String(xa)+", " +String(ya) + " || ");
-  
   
     xe = xa-d;
     ye = ya;
@@ -70,8 +62,7 @@ int inverse_kinematics(double xe, double ye, int left_leg_param) {
       joint_angles[5] = 180 - joint_angles[0]; // rear joint servo command
       joint_angles[4] = 135 - joint_angles[2]; // front joint servo comand
     }
-    
-  
+
     // NaN check for joint angles
     for (int i = 0; i < 4; ++i) {
       if (isnan(joint_angles[i])) {
@@ -94,7 +85,7 @@ void setupServoIK(){
   }
 
 void ServoIK(float roll_cmd, float body_height){ //roll in degrees, body height in mm
-    double x_pos=37.5;
+    double x_pos=33.0;
     // Serial.println("roll_cmd: " + String(roll_cmd));
     roll_cmd = radians(roll_cmd);
     if(roll_cmd < 0){
@@ -145,5 +136,6 @@ void ServoIK(float roll_cmd, float body_height){ //roll in degrees, body height 
         // Serial.println("Joint_angles_right: " + String(joint_angles[4]) + ", "+ joint_angles[5]);
       }
     }
+    delay(50);
   }
 #endif

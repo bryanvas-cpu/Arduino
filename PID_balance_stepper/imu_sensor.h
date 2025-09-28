@@ -45,7 +45,6 @@ void calibrateGyro(int numSamples = 500) {
 
 void setupIMU() {
     delay(100);
-    Wire.begin(); // SDA = GPIO21, SCL = GPIO22 on ESP32
     imu.setWire(&Wire);
     imu.beginAccel();
     imu.beginGyro();
@@ -60,30 +59,41 @@ IMUData updateIMU() {
   float gx = 0, gy = 0, gz = 0;
   float ax = 0, ay = 0, az = 0;
 
-  for (int i = 0; i < 10; i++) {
-    imu.gyroUpdate();
-    gx += imu.gyroX() - gyroBiasX;
-    gy += imu.gyroY() - gyroBiasY;
-    gz += imu.gyroZ() - gyroBiasZ;
-  }
-  gx *= 3.1415 / (10 * 180);
-  gy *= 3.1415 / (10 * 180);
-  gz *= 3.1415 / (10 * 180);
+  imu.gyroUpdate();
+  gx += imu.gyroX() - gyroBiasX;
+  gy += imu.gyroY() - gyroBiasY;
+  gz += imu.gyroZ() - gyroBiasZ;
 
-  for (int i = 0; i < 10; i++) {
-    imu.accelUpdate();
-    ax += imu.accelX();
-    ay += imu.accelY();
-    az += imu.accelZ();
-  }
-  ax *= 9.81 / 10;
-  ay *= 9.81 / 10;
-  az *= 9.81 / 10;
+  imu.accelUpdate();
+  ax += imu.accelX();
+  ay += imu.accelY();
+  az += imu.accelZ();
 
+  // --- raw orientation ---
   float roll  = atan2(ay, -az) * 180.0 / PI;
   float pitch = atan2(-ax, sqrt(ay * ay + az * az)) * 180.0 / PI;
   float yaw = 0;
-  IMUData result = {ax, roll, pitch, yaw, gx, gy, gz};
+
+  // --- exponential smoothing (alpha = 0.5) ---
+  const float alpha = 0.01;
+  static float f_ax = 0, f_ay = 0, f_az = 0;
+  static float f_gx = 0, f_gy = 0, f_gz = 0;
+  static float f_roll = 0, f_pitch = 0, f_yaw = 0;
+
+  f_ax = alpha * ax + (1 - alpha) * f_ax;
+  f_ay = alpha * ay + (1 - alpha) * f_ay;
+  f_az = alpha * az + (1 - alpha) * f_az;
+
+  f_gx = alpha * gx + (1 - alpha) * f_gx;
+  f_gy = alpha * gy + (1 - alpha) * f_gy;
+  f_gz = alpha * gz + (1 - alpha) * f_gz;
+
+  f_roll  = alpha * roll + (1 - alpha) * f_roll;
+  f_pitch = alpha * pitch + (1 - alpha) * f_pitch;
+  f_yaw   = alpha * yaw + (1 - alpha) * f_yaw;
+
+  // --- return filtered values ---
+  IMUData result = {f_ax, f_roll, f_pitch, f_yaw, f_gx, f_gy, f_gz};
   return result;
 }
 

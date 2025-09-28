@@ -53,7 +53,7 @@ void motor_driver_init() {
 }
 
 // --- Set motor angular velocities (rad/s) ---
-DriveVel motor_driver_set_omega(float omega1, float omega2) {
+void motor_driver_set_omega(float omega1, float omega2) {
     omega_motor1 = omega1;
     omega_motor2 = omega2;
 
@@ -80,8 +80,6 @@ DriveVel motor_driver_set_omega(float omega1, float omega2) {
     // --- Compute robot linear and angular velocity ---
     drive_vel.lin_vel = r * (omega_motor1 + omega_motor2) / 2.0;
     drive_vel.ang_vel = r * (omega_motor2 - omega_motor1) / L;
-
-    return {drive_vel.lin_vel, drive_vel.ang_vel};
 }
 
 #endif // MOTOR_DRIVER_LEDC_H

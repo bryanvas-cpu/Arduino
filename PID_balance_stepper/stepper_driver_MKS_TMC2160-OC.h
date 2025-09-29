@@ -6,7 +6,7 @@
 // --- Pin definitions ---
 #define STEP_PIN1 2
 #define DIR_PIN1 4
-#define STEP_PIN2 18
+#define STEP_PIN2 25
 #define DIR_PIN2 5
 
 // --- Stepper config ---
@@ -21,7 +21,7 @@ const int CHANNEL2 = 1; // Motor2
 float omega_motor1 = 0; // rad/s
 float omega_motor2 = 0; // rad/s
 
-float r = 0.145;
+float r = 0.145/2;
 float L = 0.41;
 
 struct DriveVel{

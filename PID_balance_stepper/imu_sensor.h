@@ -12,6 +12,11 @@ float gyroBiasZ = 0.0;
 float gx, gy, gz;
 float ax, ay, az;
 
+const float alpha = 0.05;
+static float f_ax = 0, f_ay = 0, f_az = 0;
+static float f_gx = 0, f_gy = 0, f_gz = 0;
+static float f_roll = 0, f_pitch = 0, f_yaw = 0;
+
 struct IMUData {
     float linearAccX;
     float roll;
@@ -51,7 +56,7 @@ void setupIMU() {
     imu.beginMag(); // even if not working, harmless
   
     delay(100);
-  
+    
     calibrateGyro();
 }
 
@@ -75,10 +80,7 @@ IMUData updateIMU() {
   float yaw = 0;
 
   // --- exponential smoothing (alpha = 0.5) ---
-  const float alpha = 0.005;
-  static float f_ax = 0, f_ay = 0, f_az = 0;
-  static float f_gx = 0, f_gy = 0, f_gz = 0;
-  static float f_roll = 0, f_pitch = 0, f_yaw = 0;
+
 
   f_ax = alpha * ax + (1 - alpha) * f_ax;
   f_ay = alpha * ay + (1 - alpha) * f_ay;
